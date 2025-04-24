@@ -2,6 +2,9 @@ const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
 
+// SCHEMA POST
+const postsModel = require('./schemaPost')
+
 const app = express()
 const port = 3002
 const dbName = 'StriveBlog'
@@ -9,20 +12,6 @@ const dbName = 'StriveBlog'
 app.use(cors())
 app.use(express.json())
 
-// SCHEMA POST
-const postSchema = new mongoose.Schema({
-    category: { type: String, required: true },
-    title: { type: String, required: true },
-    cover: { type: String, required: true },
-    readTime: {
-        value: { type: Number, required: true },
-        unit: { type: String, required: true }
-    },
-    author: { type: mongoose.Schema.Types.ObjectId, ref: 'Author', required: true },
-    content: { type: String, required: true }
-})
-
-const postsModel = mongoose.model('Post', postSchema)
 
 // BASE
 app.get('/', (req, res) => {
@@ -108,7 +97,7 @@ app.delete('/posts/:_id', async (req, res) => {
     }
 })
 
-// DB connection e start server
+// Connessione al DB 
 async function start() {
     try {
         await mongoose.connect('mongodb+srv://antonellamorelli1998:Antonella.98@clusterantonella.fijtagm.mongodb.net/' + dbName)

@@ -2,6 +2,9 @@ const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
 
+// SCHEMA AUTORE
+const authorsModel = require('./schemaAuthor')
+
 const app = express()
 const port = 3001
 const dbName = 'StriveBlog'
@@ -9,16 +12,6 @@ const dbName = 'StriveBlog'
 app.use(cors())
 app.use(express.json())
 
-// SCHEMA AUTORE
-const authorSchema = new mongoose.Schema({
-    nome: { type: String, required: true },
-    cognome: { type: String, required: true },
-    email: { type: String, required: true },
-    dataDiNascita: { type: String, required: true },
-    avatar: { type: String, required: true }
-})
-
-const authorsModel = mongoose.model('Author', authorSchema)
 
 // BASE
 app.get('/', (req, res) => {
@@ -84,7 +77,7 @@ app.delete('/authors/:_id', async (req, res) => {
     }
 })
 
-// Connessione al DB e avvio del server
+// Connessione al DB 
 async function start() {
     try {
         await mongoose.connect('mongodb+srv://antonellamorelli1998:Antonella.98@clusterantonella.fijtagm.mongodb.net/?retryWrites=true&w=majority&appName=ClusterAntonella' + dbName)
@@ -97,4 +90,3 @@ async function start() {
 }
 
 start()
-
