@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const Author = require('./schemaAuthor')  // Importa lo schema Author
+const Author = require('./schemaAuthor')
 
 const postSchema = new mongoose.Schema({
   category: { type: String, required: true },
