@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
 
+
 // SCHEMA AUTORE
 const authorsModel = require('./schemaAuthor')
 
@@ -80,7 +81,7 @@ app.delete('/authors/:_id', async (req, res) => {
 // Connessione al DB 
 async function start() {
     try {
-        await mongoose.connect('mongodb+srv://antonellamorelli1998:Antonella.98@clusterantonella.fijtagm.mongodb.net/?retryWrites=true&w=majority&appName=ClusterAntonella' + dbName)
+        await mongoose.connect('mongodb+srv://antonellamorelli1998:Antonella.98@clusterantonella.fijtagm.mongodb.net/' + dbName)
         app.listen(port, () => {
             console.log(`Attivo su port ${port}`)
         })
