@@ -3,6 +3,9 @@ require('dotenv').config({ path: '../.env' })
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
+const cloudinary = require('cloudinary').v2
+const multer = require('multer')
+const { CloudinaryStorage } = require('multer-storage-cloudinary')
 
 
 
@@ -11,12 +14,28 @@ const postsModel = require('./schemaPost')
 
 const app = express()
 const port = 3002
-const dbName = 'StriveBlog'
 const mongoUri = process.env.MONGO_URI
 
 app.use(cors())
 app.use(express.json())
 
+//MULTER & CLOUDINARY
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'post_covers',
+        resource_type: 'auto',
+    },
+})
+
+// CLOUDINARY
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+const upload = multer({ storage: storage })
 
 // BASE
 app.get('/', (req, res) => {
@@ -125,6 +144,36 @@ app.get('/authors/:id/posts', async (req, res) => {
     }
 })
 
+// PATCH - Caricare la cover del post
+app.patch('/posts/:postId/cover', upload.single('cover'), async (req, res) => {
+    const { postId } = req.params
+
+    if (!req.file) {
+        return res.status(400).json({ error: 'Nessun file caricato' })
+    }
+
+    try {
+        const coverUrl = req.file.path
+
+        const updatedPost = await postsModel.findByIdAndUpdate(
+            postId,
+            { cover: coverUrl },
+            { new: true }
+        )
+
+        if (!updatedPost) {
+            return res.status(404).json({ error: 'Post non trovato' })
+        }
+
+        res.status(200).json({
+            message: 'Copertura caricata con successo',
+            coverUrl: coverUrl,
+            post: updatedPost,
+        })
+    } catch (err) {
+        res.status(500).json({ error: 'Errore nel caricamento dell\'immagine' })
+    }
+})
 
 
 // Connessione al DB 
