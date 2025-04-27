@@ -1,7 +1,9 @@
+require('dotenv').config({ path: '../.env' })
+
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
-require('dotenv').config();
+
 
 
 // SCHEMA POST
@@ -10,6 +12,7 @@ const postsModel = require('./schemaPost')
 const app = express()
 const port = 3002
 const dbName = 'StriveBlog'
+const mongoUri = process.env.MONGO_URI
 
 app.use(cors())
 app.use(express.json())
@@ -99,10 +102,35 @@ app.delete('/posts/:_id', async (req, res) => {
     }
 })
 
+
+// GET /authors/:id/posts - Post di uno specifico autore
+app.get('/authors/:id/posts', async (req, res) => {
+    try {
+        const authorId = req.params.id
+        const posts = await postsModel.find({ author: authorId }).populate('author')
+
+        const formattedPosts = posts.map(post => ({
+            _id: post._id,
+            title: post.title,
+            cover: post.cover,
+            author: {
+                name: `${post.author.nome} ${post.author.cognome}`,
+                avatar: post.author.avatar
+            }
+        }))
+
+        res.status(200).json(formattedPosts)
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+})
+
+
+
 // Connessione al DB 
 async function start() {
     try {
-        await mongoose.connect('mongodb+srv://antonellamorelli1998:Antonella.98@clusterantonella.fijtagm.mongodb.net/' + dbName)
+        await mongoose.connect(mongoUri)
         app.listen(port, () => {
             console.log(`Attivo su port ${port}`)
         })

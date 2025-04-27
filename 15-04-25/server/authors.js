@@ -1,6 +1,9 @@
+require('dotenv').config({ path: '../.env' })
+
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
+
 
 
 // SCHEMA AUTORE
@@ -9,6 +12,7 @@ const authorsModel = require('./schemaAuthor')
 const app = express()
 const port = 3001
 const dbName = 'StriveBlog'
+const mongoUri = process.env.MONGO_URI
 
 app.use(cors())
 app.use(express.json())
@@ -81,7 +85,7 @@ app.delete('/authors/:_id', async (req, res) => {
 // Connessione al DB 
 async function start() {
     try {
-        await mongoose.connect('mongodb+srv://antonellamorelli1998:Antonella.98@clusterantonella.fijtagm.mongodb.net/' + dbName)
+        await mongoose.connect(mongoUri)
         app.listen(port, () => {
             console.log(`Attivo su port ${port}`)
         })
