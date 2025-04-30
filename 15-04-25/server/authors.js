@@ -1,31 +1,23 @@
-require('dotenv').config({ path: '../.env' })
-
 const express = require('express')
-const cors = require('cors')
-const mongoose = require('mongoose')
 const cloudinary = require('cloudinary').v2
 const multer = require('multer')
 const { CloudinaryStorage } = require('multer-storage-cloudinary')
 
 
-// SCHEMA AUTORE
+// SCHEMA
 const authorsModel = require('./schemaAuthor')
+const postsModel = require('./schemaPost')
 
-const app = express()
-const port = 3001
-const mongoUri = process.env.MONGO_URI
-
-app.use(cors())
-app.use(express.json())
+const router = express.Router()
 
 //MULTER & CLOUDINARY
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-      folder: 'avatars', 
-      allowed_formats: ['jpg', 'png', 'jpeg'],
+        folder: 'avatars',
+        allowed_formats: ['jpg', 'png', 'jpeg'],
     },
-  })
+})
 
 const upload = multer({ storage: storage })
 
@@ -37,13 +29,8 @@ cloudinary.config({
 })
 
 
-// BASE
-app.get('/', (req, res) => {
-    res.json({ message: 'App connect' })
-})
-
 // GET /authors - Lista autori
-app.get('/authors', async (req, res) => {
+router.get('/', async (req, res) => {
 
     const page = Number(req.query.page)
     const limit = Number(req.query.limit)
@@ -60,7 +47,7 @@ app.get('/authors', async (req, res) => {
 })
 
 // GET /authors/:_id - Singolo autore
-app.get('/authors/:_id', async (req, res) => {
+router.get('/:_id', async (req, res) => {
     try {
         const author = await authorsModel.findById(req.params._id)
         res.status(200).json(author)
@@ -70,7 +57,7 @@ app.get('/authors/:_id', async (req, res) => {
 })
 
 // POST /authors - Crea nuovo autore
-app.post('/authors', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const obj = req.body
         const newAuthor = new authorsModel(obj)
@@ -82,7 +69,7 @@ app.post('/authors', async (req, res) => {
 })
 
 // PUT /authors/:_id - Modifica autore
-app.put('/authors/:_id', async (req, res) => {
+router.put('/:_id', async (req, res) => {
     try {
         const updatedAuthor = await authorsModel.findByIdAndUpdate(req.params._id, req.body, { new: true })
         res.status(200).json(updatedAuthor)
@@ -92,7 +79,7 @@ app.put('/authors/:_id', async (req, res) => {
 })
 
 // DELETE /authors/:_id - Elimina autore
-app.delete('/authors/:_id', async (req, res) => {
+router.delete('/:_id', async (req, res) => {
     try {
         await authorsModel.findByIdAndDelete(req.params._id)
         res.status(200).json({ message: 'Autore eliminato con successo' })
@@ -103,47 +90,56 @@ app.delete('/authors/:_id', async (req, res) => {
 
 
 // PATCH -  Caricare l'avatar di un autore specifico
-app.patch('/authors/:authorId/avatar', upload.single('avatar'), async (req, res) => {
+router.patch('/:authorId/avatar', upload.single('avatar'), async (req, res) => {
     const { authorId } = req.params
-  
+
     if (!req.file || !req.file.path) {
-      return res.status(400).json({ error: 'Nessun file caricato' })
+        return res.status(400).json({ error: 'Nessun file caricato' })
     }
-  
-    try {
-      const updatedAuthor = await authorsModel.findByIdAndUpdate(
-        authorId,
-        { avatar: req.file.path },
-        { new: true }
-      )
-  
-      if (!updatedAuthor) {
-        return res.status(404).json({ error: 'Autore non trovato' })
-      }
-  
-      res.status(200).json({
-        message: 'Avatar caricato con successo',
-        avatarUrl: req.file.path,
-        author: updatedAuthor,
-      })
-    } catch (err) {
-      console.error(err)
-      res.status(500).json({ error: 'Errore nel caricamento dell\'immagine' })
-    }
-  })
-  
 
-
-// Connessione al DB 
-async function start() {
     try {
-        await mongoose.connect(mongoUri)
-        app.listen(port, () => {
-            console.log(`Attivo su port ${port}`)
+        const updatedAuthor = await authorsModel.findByIdAndUpdate(
+            authorId,
+            { avatar: req.file.path },
+            { new: true }
+        )
+
+        if (!updatedAuthor) {
+            return res.status(404).json({ error: 'Autore non trovato' })
+        }
+
+        res.status(200).json({
+            message: 'Avatar caricato con successo',
+            avatarUrl: req.file.path,
+            author: updatedAuthor,
         })
     } catch (err) {
-        console.error('Errore nella connessione al DB:', err)
+        console.error(err)
+        res.status(500).json({ error: 'Errore nel caricamento dell\'immagine' })
     }
-}
+})
 
-start()
+
+// GET /authors/:id/posts
+router.get('/:id/posts', async (req, res) => {
+    try {
+        const authorId = req.params.id
+        const posts = await postsModel.find({ author: authorId }).populate('author')
+
+        const formattedPosts = posts.map(post => ({
+            _id: post._id,
+            title: post.title,
+            cover: post.cover,
+            author: {
+                name: `${post.author.nome} ${post.author.cognome}`,
+                avatar: post.author.avatar
+            }
+        }))
+
+        res.status(200).json(formattedPosts)
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+})
+
+module.exports = router
