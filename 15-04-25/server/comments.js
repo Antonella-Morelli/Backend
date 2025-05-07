@@ -4,7 +4,11 @@ const express = require('express')
 const commentsModel = require('./schemaComment')
 const postsModel = require('./schemaPost')
 
+const authMiddleware = require('./authMiddleware')
+
 const router = express.Router()
+
+router.use(authMiddleware)
 
 //GET /POSTS/:ID/COMMENTS - LISTA COMMENTI DI UN POST SPECIFICO
 router.get('/posts/:postId/comments', async (req, res) => {
@@ -31,7 +35,11 @@ router.get('/posts/:postId/comments/:commentId', async (req, res) => {
 router.post('/posts/:postId', async (req, res) => {
     try {
         const { postId } = req.params
-        const newComment = new commentsModel({ ...req.body, post: postId })
+        const newComment = new commentsModel({
+            text: req.body.text,
+            post: postId,
+            author: req.author._id
+        })
         const savedComment = await newComment.save()
         res.status(201).json(savedComment)
     } catch (err) {
@@ -42,12 +50,18 @@ router.post('/posts/:postId', async (req, res) => {
 router.put('/posts/:postId/comments/:commentId', async (req, res) => {
     try {
         const { postId, commentId } = req.params
-        const updatedComment = await commentsModel.findOneAndUpdate(
-            { _id: commentId, post: postId },
-            req.body,
-            { new: true }
-        )
-        res.status(200).json(updatedComment)
+        const comment = await commentsModel.findOne({ _id: commentId, post: postId })
+
+        if (!comment) return res.status(404).json({ error: 'Commento non trovato' })
+
+        if (comment.author.toString() !== req.author._id.toString()) {
+            return res.status(403).json({ error: 'Non sei autorizzato a modificare questo commento' })
+        }
+
+        comment.text = req.body.text || comment.text
+        const updated = await comment.save()
+
+        res.status(200).json(updated)
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
@@ -56,14 +70,20 @@ router.put('/posts/:postId/comments/:commentId', async (req, res) => {
 router.delete('/posts/:postId/comments/:commentId', async (req, res) => {
     try {
         const { postId, commentId } = req.params
-        const deletedComment = await commentsModel.findOneAndDelete({
-            _id: commentId,
-            post: postId
-        })
+        const comment = await commentsModel.findOne({ _id: commentId, post: postId })
+
+        if (!comment) return res.status(404).json({ error: 'Commento non trovato' })
+
+        if (comment.author.toString() !== req.author._id.toString()) {
+            return res.status(403).json({ error: 'Non sei autorizzato a eliminare questo commento' })
+        }
+
+        await commentsModel.findByIdAndDelete(commentId)
         res.status(200).json({ message: 'Commento eliminato con successo' })
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
 })
+
 
 module.exports = router

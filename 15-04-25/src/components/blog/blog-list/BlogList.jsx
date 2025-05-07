@@ -6,7 +6,7 @@ const BlogList = props => {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3002/posts")
+    fetch("http://localhost:3001/posts")
       .then(response => response.json())
       .then(data => setPosts(data))
       .catch(error => console.error("Error fetching posts:", error));

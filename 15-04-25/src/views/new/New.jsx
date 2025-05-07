@@ -51,7 +51,7 @@ const NewBlogPost = () => {
       content: text,
     }
 
-    fetch("http://localhost:3002/posts", {
+    fetch("http://localhost:3001/posts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

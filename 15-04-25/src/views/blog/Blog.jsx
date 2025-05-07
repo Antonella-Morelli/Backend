@@ -14,7 +14,7 @@ const Blog = () => {
   useEffect(() => {
     const { id } = params;
 
-    fetch(`http://localhost:3002/posts/${id}`)
+    fetch(`http://localhost:3001/posts/${id}`)
       .then(response => {
         if (!response.ok) {
           throw new Error("Post non trovato");

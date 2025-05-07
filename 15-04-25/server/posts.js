@@ -6,6 +6,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary')
 // SCHEMA POST
 const postsModel = require('./schemaPost')
 
+const authMiddleware = require('./authMiddleware')
 const router = express.Router()
 
 //MULTER & CLOUDINARY
@@ -26,17 +27,24 @@ cloudinary.config({
 
 const upload = multer({ storage: storage })
 
+//-----ROTTE PUBBLICHE-----
 // GET /posts - Lista post
 router.get('/', async (req, res) => {
-
-    const page = Number(req.query.page)
-    const limit = Number(req.query.limit)
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 10
 
     try {
         const skip = (page - 1) * limit
-        const posts = await postsModel.find().populate('author').skip(skip).limit(limit)
 
-        const formattedPosts = posts.map(post => ({
+        const posts = await postsModel
+            .find()
+            .populate('author')
+            .skip(skip)
+            .limit(limit)
+
+        const validPosts = posts.filter(post => post.author)
+
+        const formattedPosts = validPosts.map(post => ({
             _id: post._id,
             title: post.title,
             cover: post.cover,
@@ -48,9 +56,11 @@ router.get('/', async (req, res) => {
 
         res.status(200).json(formattedPosts)
     } catch (err) {
+        console.error('Errore GET /posts:', err)
         res.status(500).json({ error: err.message })
     }
 })
+
 
 // GET /posts/:_id - Singolo post
 router.get('/:_id', async (req, res) => {
@@ -74,6 +84,8 @@ router.get('/:_id', async (req, res) => {
     }
 })
 
+// ------ROTTE PROTETTE-------
+router.use(authMiddleware)
 // POST /posts - Crea nuovo post
 router.post('/', async (req, res) => {
     try {
